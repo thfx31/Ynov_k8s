@@ -1,5 +1,3 @@
-Voici un **README.md complet**, clair et structuré, qui reprend **tout ce que nous avons fait ensemble** : installation des composants Kubernetes, containerd, kubeadm, crictl, Calico, services de test, puis intégration DigitalOcean (CCM, secret, PVC, Pod).
-
 ---
 
 # 📘 README.md
@@ -260,13 +258,3 @@ Vous avez maintenant :
 
 ---
 
-# ❓ Tu veux que j’ajoute aussi :
-
-* l’installation du **CSI DigitalOcean**
-* un **StorageClass** personnalisé
-* l’installation de **MetalLB**
-* un **schéma d’architecture**
-* une version en **anglais**
-* une version formatée pour **GitHub avec badges**
-
-Dis-moi et je l’intègre !
