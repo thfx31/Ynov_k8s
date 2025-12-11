@@ -11,6 +11,6 @@
     - k8s_prereqs
     - k8s_join_worker
 
-- hosts: master
-  roles:
-    - k8s_cni_calico
+# - hosts: master
+#   roles:
+#     - k8s_cni_calico
