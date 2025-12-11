@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jenkins-apps
+  name: jenkins-apps
+  namespace: rt
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins-apps
+  template:
+    metadata:
+      labels:
+        app: jenkins-apps
+    spec:
+      containers:
+        - image: thfx31/ynov:jenkins-v1
+          name: jenkins
+      imagePullSecrets:
+        - name: dockerhub-secret
