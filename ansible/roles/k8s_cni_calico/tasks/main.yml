@@ -1,0 +1,29 @@
+---
+- name: Ensure kubectl is available
+  ansible.builtin.command: kubectl version --client
+  register: kubectl_check
+  changed_when: false
+
+- name: Ensure kubeconfig exists for root
+  ansible.builtin.stat:
+    path: /root/.kube/config
+  register: kubeconfig_stat
+
+- name: Fail if kubeconfig is missing
+  ansible.builtin.fail:
+    msg: "/root/.kube/config est manquant. Assure-toi que le rôle k8s_init_master a été exécuté."
+  when: not kubeconfig_stat.stat.exists
+
+- name: Wait for Kubernetes API to be reachable
+  ansible.builtin.command: kubectl get nodes
+  register: api_check
+  retries: 10
+  delay: 6
+  changed_when: false
+  until: api_check.rc == 0
+
+- name: Apply Calico CNI manifest
+  ansible.builtin.command: >
+    kubectl apply -f {{ calico_manifest_url }}
+  register: calico_apply
+  changed_when: "'created' in calico_apply.stdout or 'configured' in calico_apply.stdout"

@@ -1,0 +1,10 @@
+all:
+  children:
+    master:
+      hosts:
+        kube-tf-master:
+
+    workers:
+      hosts:
+        kube-tf-worker01:
+ 

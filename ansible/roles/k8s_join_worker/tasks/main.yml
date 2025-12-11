@@ -1,0 +1,25 @@
+---
+- name: Ensure master_host variable is defined
+  ansible.builtin.assert:
+    that:
+      - master_host is defined
+    fail_msg: "La variable master_host doit être définie (ex: master_host: \"{{ '{{ groups[\\'master\\'][0] }}' }}\")."
+
+- name: Ensure join command fact exists on master
+  ansible.builtin.assert:
+    that:
+      - hostvars[master_host]['kubeadm_join_command'] is defined
+    fail_msg: "kubeadm_join_command n'est pas défini sur le master. As-tu bien exécuté le rôle k8s_init_master avant ?"
+
+- name: Get join command from master hostvars
+  ansible.builtin.set_fact:
+    kubeadm_join_command: "{{ hostvars[master_host]['kubeadm_join_command'] }}"
+
+- name: Reset Kubernetes node before join (idempotent)
+  ansible.builtin.command: kubeadm reset -f
+  ignore_errors: true
+
+- name: Join node to Kubernetes cluster
+  ansible.builtin.command: "{{ kubeadm_join_command }}"
+  args:
+    creates: /etc/kubernetes/kubelet.conf
