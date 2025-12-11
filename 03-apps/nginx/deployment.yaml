@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: web-apps
+  name: web-apps
+  namespace: rt
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-apps
+  template:
+    metadata:
+      labels:
+        app: web-apps
+    spec:
+      containers:
+        - image: thfx31/ynov:forge-v1
+          name: nginx
+      imagePullSecrets:
+        - name: dockerhub-secret

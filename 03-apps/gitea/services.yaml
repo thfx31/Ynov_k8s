@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea-svc
+  namespace: rt
+spec:
+  ports:
+    - name: gitea
+      port: 81
+      protocol: TCP
+      targetPort: 3000
+  selector:
+    app: gitea-apps
