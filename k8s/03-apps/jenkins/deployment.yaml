@@ -20,3 +20,7 @@ spec:
           name: jenkins
       imagePullSecrets:
         - name: dockerhub-secret
+      volumes:
+        - name: jenkins-data
+          persistentVolumeClaim:
+            claimName: jenkins-pvc 
