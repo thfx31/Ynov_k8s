@@ -10,6 +10,12 @@ Exporter la config
 export KUBECONFIG=~/.kube/do-kubeconfig
 ```
 ---
+## API Token DigitalOcean
+Créer un token API en Read Write sur le tenant DO.
+Il servira à la création du loadbalancer.
+Lien : https://cloud.digitalocean.com/account/api/tokens
+
+---
 ## Cloner le projet
 ```shell
 git clone git@github.com:thfx31/Ynov_k8s.git
