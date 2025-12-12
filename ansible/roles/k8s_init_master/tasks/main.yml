@@ -1,11 +1,19 @@
 ---
-- name: Initialise Kubernetes control plane
-  ansible.builtin.command: kubeadm init
+- name: Copy kubeadm config file for Digital Ocean
+  ansible.builtin.copy:
+    src: kubeadm-config.yaml
+    dest: /etc/kubernetes/kubeadm-config.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Initialise Kubernetes control plane with config
+  ansible.builtin.command: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml --upload-certs
   args:
     creates: /etc/kubernetes/admin.conf
   register: kubeadm_init_output
 
-- name: Ensure kube directory exists
+- name: Ensure .kube directory exists
   ansible.builtin.file:
     path: /root/.kube
     state: directory
@@ -30,6 +38,6 @@
   ansible.builtin.set_fact:
     kubeadm_join_command: "{{ kubeadm_join_cmd_raw.stdout }}"
 
-- name: Print Kubernetes join command (just for info)
+- name: Print Kubernetes join command
   ansible.builtin.debug:
     msg: "Join command: {{ kubeadm_join_command }}"

@@ -1,8 +1,8 @@
 ## Set up droplets
-Create 2 Ubuntu 24.04 droplets (virtual machines) on DigitalOcean tenant.
+Créer 2 droplets Ubuntu 24.04 (machines virtuelles) dans l'espace DigitalOcean.
 
 ## Virtualenv
-Create a virtualenv on yout Ansible Controler
+Créer un virtialenv sur le controleur Ansible
 ```shell
 # Prerequisites
 sudo apt-get install python3-venv
@@ -15,12 +15,13 @@ source ~/.virtualenvs/ansible/bin/activate
 ```
 
 ## Host file
-Add IP and hostname in /etc/hosts on Ansible controler machine
+Ajouter le hostname et l'IP des serveurs dans le fichier /etc/hosts du controleur Ansible.
 ```shell
 sudo vim /etc/hosts
 ```
 
-## Inventory.yml
+## Inventory
+Editer le fichier inventory.yml et ajouter les droptlets
 Edit inventory.yml and add these droplets
 
 ## Run cluster.yml playbook

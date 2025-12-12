@@ -3,22 +3,35 @@
   ansible.builtin.assert:
     that:
       - master_host is defined
-    fail_msg: "La variable master_host doit être définie (ex: master_host: \"{{ '{{ groups[\\'master\\'][0] }}' }}\")."
+    fail_msg: "La variable master_host doit être définie."
 
 - name: Ensure join command fact exists on master
   ansible.builtin.assert:
     that:
       - hostvars[master_host]['kubeadm_join_command'] is defined
-    fail_msg: "kubeadm_join_command n'est pas défini sur le master. As-tu bien exécuté le rôle k8s_init_master avant ?"
+    fail_msg: "kubeadm_join_command n'est pas défini sur le master."
 
 - name: Get join command from master hostvars
   ansible.builtin.set_fact:
     kubeadm_join_command: "{{ hostvars[master_host]['kubeadm_join_command'] }}"
 
+# 1. On configure le Kubelet AVANT le join via son fichier d'environnement standard
+- name: Configure Kubelet with External Cloud Provider args
+  ansible.builtin.copy:
+    dest: /etc/default/kubelet
+    content: 'KUBELET_EXTRA_ARGS="--cloud-provider=external"'
+    owner: root
+    group: root
+    mode: '0644'
+
+# 2. On reset le noeud pour être sûr (idempotence)
 - name: Reset Kubernetes node before join (idempotent)
   ansible.builtin.command: kubeadm reset -f
+  args:
+    removes: /etc/kubernetes/kubelet.conf
   ignore_errors: true
 
+# 3. On lance le join SANS le flag inconnu (le kubelet lira /etc/default/kubelet tout seul)
 - name: Join node to Kubernetes cluster
   ansible.builtin.command: "{{ kubeadm_join_command }}"
   args:

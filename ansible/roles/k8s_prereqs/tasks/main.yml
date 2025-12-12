@@ -54,6 +54,28 @@
     enabled: true
     state: stopped
 
+- name: Add Helm GPG key (official Buildkite repo)
+  ansible.builtin.shell: |
+    curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey \
+      | gpg --dearmor \
+      | tee /usr/share/keyrings/helm.gpg > /dev/null
+  args:
+    creates: /usr/share/keyrings/helm.gpg
+
+- name: Add Helm APT repository (official)
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/helm-stable-debian.list
+    mode: '0644'
+    content: |
+      deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main
+
+- name: Install Helm package (Master only)
+  ansible.builtin.apt:
+    name: helm
+    state: present
+    update_cache: true
+  when: inventory_hostname in groups['master']
+
 - name: Ensure containerd config directory exists
   ansible.builtin.file:
     path: "{{ k8s_prereqs_containerd_config_dir }}"
