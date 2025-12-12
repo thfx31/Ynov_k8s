@@ -1,6 +1,6 @@
 galaxy_info:
   author: Thomas Fx
-  description: Initialize a Kubernetes master node using kubeadm
+  description: Install prerequisites for Kubernetes nodes
   license: MIT
 
   min_ansible_version: "2.2"

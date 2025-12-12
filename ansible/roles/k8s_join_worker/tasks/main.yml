@@ -15,7 +15,6 @@
   ansible.builtin.set_fact:
     kubeadm_join_command: "{{ hostvars[master_host]['kubeadm_join_command'] }}"
 
-# 1. On configure le Kubelet AVANT le join via son fichier d'environnement standard
 - name: Configure Kubelet with External Cloud Provider args
   ansible.builtin.copy:
     dest: /etc/default/kubelet
@@ -24,14 +23,12 @@
     group: root
     mode: '0644'
 
-# 2. On reset le noeud pour être sûr (idempotence)
 - name: Reset Kubernetes node before join (idempotent)
   ansible.builtin.command: kubeadm reset -f
   args:
     removes: /etc/kubernetes/kubelet.conf
   ignore_errors: true
 
-# 3. On lance le join SANS le flag inconnu (le kubelet lira /etc/default/kubelet tout seul)
 - name: Join node to Kubernetes cluster
   ansible.builtin.command: "{{ kubeadm_join_command }}"
   args:
