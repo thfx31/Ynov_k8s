@@ -9,8 +9,9 @@ kind: ClusterConfiguration
 networking:
   podSubnet: "192.168.0.0/16"
 apiServer:
-  extraArgs:
-    cloud-provider: external
+  # NE PAS METTRE extraArgs: cloud-provider: external ICI
+  # Tu peux laisser la section vide ou ajouter des SANs si besoin
+  timeoutForControlPlane: 4m0s
 controllerManager:
   extraArgs:
     cloud-provider: external

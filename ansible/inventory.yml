@@ -3,10 +3,10 @@ all:
     master:
       hosts:
         # kube-tf-master:
-        kube-master:
+        kube-master01:
 
     workers:
       hosts:
         # kube-tf-worker01:
-        kube-worker:
+        kube-worker01:
  

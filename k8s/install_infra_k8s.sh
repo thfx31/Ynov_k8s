@@ -101,8 +101,10 @@ install_sealed_controller() {
     helm upgrade --install sealed-secrets sealed-secrets/sealed-secrets \
         --namespace "$KUBE_NS" \
         --set-string fullnameOverride=sealed-secrets-controller \
+        --set tolerations[0].key="node.cloudprovider.kubernetes.io/uninitialized" \
+        --set-string tolerations[0].value="true" \
+        --set tolerations[0].effect="NoSchedule" \
         --wait
-
     log "Contrôleur Sealed Secrets installé."
 }
 
@@ -120,16 +122,25 @@ setup_do_secret() {
 
     echo -e "${YELLOW}Entrez votre Token Digital Ocean (RW mandatory) :${NC}"
     read -s DO_TOKEN
+    echo "" # Retour à la ligne après le read -s
+
+    # Création du fichier temporaire
+    # Note : --dry-run=client est plus sûr que le heredoc manuel pour gérer l'encodage
+    kubectl create secret generic digitalocean \
+        --namespace "$KUBE_NS" \
+        --from-literal=access-token="$DO_TOKEN" \
+        --dry-run=client -o yaml > secret-tmp.yaml
+
     
-    cat <<EOF > secret-tmp.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: digitalocean
-  namespace: $KUBE_NS
-stringData:
-  access-token: "$DO_TOKEN"
-EOF
+#     cat <<EOF > secret-tmp.yaml
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: digitalocean
+#   namespace: $KUBE_NS
+# stringData:
+#   access-token: "$DO_TOKEN"
+# EOF
 
     log "Chiffrement du secret..."
     kubeseal --controller-namespace $KUBE_NS \

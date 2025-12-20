@@ -7,6 +7,12 @@
     group: root
     mode: '0644'
 
+- name: Workaround - Add Public IP to Loopback to avoid routing deadlock
+  ansible.builtin.command:
+    cmd: "ip addr add {{ ansible_facts['default_ipv4']['address'] }}/32 dev lo"
+  changed_when: false
+  ignore_errors: true
+
 - name: Initialise Kubernetes control plane with config
   ansible.builtin.command: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml --upload-certs
   args:
