@@ -6,8 +6,8 @@ metadata:
 spec:
   ports:
     - name: gitea
-      port: 81
+      port: 80
       protocol: TCP
       targetPort: 3000
   selector:
-    app: gitea-apps
+    app: gitea

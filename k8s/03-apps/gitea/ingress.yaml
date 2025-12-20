@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitea-ingress
+  namespace: rt
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: gitea.IP_LB_PLACEHOLDER.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gitea-svc
+            port:
+              number: 80

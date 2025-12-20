@@ -1,0 +1,267 @@
+# -------------------------
+# 1. LA FORGE (NGINX)
+# -------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forge
+  template:
+    metadata:
+      labels:
+        app: forge
+    spec:
+      imagePullSecrets:
+      - name: regcred  # <--- LE SECRET DOCKER HUB
+      containers:
+      - name: forge
+        image: thfx31/ynov:forge-v1
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forge
+spec:
+  selector:
+    app: forge
+  ports:
+  - port: 80
+    targetPort: 80
+---
+
+# -------------------------
+# 2. JENKINS (Stateful)
+# -------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      securityContext:
+        fsGroup: 1000 # Jenkins runs as user 1000 usually
+      containers:
+      - name: jenkins
+        image: thfx31/ynov:jenkins-v1
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+      volumes:
+      - name: jenkins-home
+        persistentVolumeClaim:
+          claimName: jenkins-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: do-block-storage
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins
+spec:
+  selector:
+    app: jenkins
+  ports:
+  - port: 80
+    targetPort: 8080
+
+---
+
+# -------------------------
+# 3. DB pour GITEA (Postgres)
+# -------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea-db
+  template:
+    metadata:
+      labels:
+        app: gitea-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:14
+        env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata        
+        - name: POSTGRES_USER
+          value: gitea
+        - name: POSTGRES_PASSWORD
+          value: gitea
+        - name: POSTGRES_DB
+          value: gitea
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: gitea-db-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitea-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: do-block-storage
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea-db
+spec:
+  selector:
+    app: gitea-db
+  ports:
+  - port: 5432
+
+---
+
+# -------------------------
+# 4. GITEA (App)
+# -------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: gitea
+        image: thfx31/ynov:gitea-v1
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DB_TYPE
+          value: postgres
+        - name: DB_HOST
+          value: gitea-db:5432
+        - name: DB_NAME
+          value: gitea
+        - name: DB_USER
+          value: gitea
+        - name: DB_PASSWD
+          value: gitea
+        volumeMounts:
+        - name: gitea-data
+          mountPath: /data
+      volumes:
+      - name: gitea-data
+        persistentVolumeClaim:
+          claimName: gitea-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitea-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: do-block-storage
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea
+spec:
+  selector:
+    app: gitea
+  ports:
+  - port: 80
+    targetPort: 3000
+
+---
+# -------------------------
+# 5. INGRESS ROUTING
+# -------------------------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+  # Forge
+  - host: forge.46.101.69.222.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: forge
+            port:
+              number: 80
+  # Jenkins
+  - host: jenkins.46.101.69.222.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jenkins
+            port:
+              number: 80
+  # Gitea
+  - host: gitea.46.101.69.222.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gitea
+            port:
+              number: 80

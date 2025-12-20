@@ -1,26 +1,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app: jenkins-apps
-  name: jenkins-apps
+  name: jenkins
   namespace: rt
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: jenkins-apps
+      app: jenkins
   template:
     metadata:
       labels:
-        app: jenkins-apps
+        app: jenkins
     spec:
-      containers:
-        - image: thfx31/ynov:jenkins-v1
-          name: jenkins
       imagePullSecrets:
-        - name: dockerhub-secret
+        - name: regcred
+      securityContext:
+        fsGroup: 1000  
+      containers:
+      - name: jenkins
+        image: thfx31/ynov:jenkins-v1
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+          - name: jenkins-home
+            mountPath: /var/jenkins_home
       volumes:
-        - name: jenkins-data
+        - name: jenkins-home
           persistentVolumeClaim:
             claimName: jenkins-pvc 

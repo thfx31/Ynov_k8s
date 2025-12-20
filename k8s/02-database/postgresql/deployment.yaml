@@ -1,37 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gitea-postgres
+  name: gitea-db
   namespace: rt
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: gitea-postgres
+      app: gitea-db
   template:
     metadata:
       labels:
-        app: gitea-postgres
+        app: gitea-db
     spec:
-      containers:
-        - name: postgres
-          image: thfx31/ynov:postgres-v1
-          env:
-            - name: POSTGRES_DB
-              value: gitea
-            - name: POSTGRES_USER
-              value: gitea
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: gitea-db-secret
-                  key: password
-          volumeMounts:
-            - name: pgdata
-              mountPath: /var/lib/postgresql/data
       imagePullSecrets:
-        - name: dockerhub-secret
+      - name: regcred
+      containers:
+      - name: postgres
+        image: thfx31/ynov:postgres-v1
+        env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POSTGRES_USER
+          value: gitea
+        - name: POSTGRES_DB
+          value: gitea
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: gitea-db-secret
+              key: password
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
       volumes:
-        - name: pgdata
-          persistentVolumeClaim:
-            claimName: gitea-postgres-pvc
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: gitea-db-pvc

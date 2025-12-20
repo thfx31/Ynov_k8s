@@ -1,44 +1,40 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gitea-apps
+  name: gitea
   namespace: rt
-  labels:
-    app: gitea-apps
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: gitea-apps
+      app: gitea
   template:
     metadata:
       labels:
-        app: gitea-apps
+        app: gitea
     spec:
+      imagePullSecrets:
+      - name: regcred
       containers:
         - name: gitea
           image: thfx31/ynov:gitea-v1
+          ports:
+            - containerPort: 3000
+            - containerPort: 22
           env:
             - name: GITEA__database__DB_TYPE
               value: postgres
             - name: GITEA__database__HOST
-              value: gitea-postgres:5432
+              value: gitea-db:5432
             - name: GITEA__database__NAME
               value: gitea
             - name: GITEA__database__USER
               value: gitea
             - name: GITEA__database__PASSWD
-              valueFrom:
-                secretKeyRef:
-                  name: gitea-db-secret
-                  key: password
+              value: gitea
           volumeMounts:
             - name: gitea-data
               mountPath: /data
-
-      imagePullSecrets:
-        - name: dockerhub-secret
-
       volumes:
         - name: gitea-data
           persistentVolumeClaim:

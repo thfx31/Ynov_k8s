@@ -1,11 +1,12 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: gitea-postgres-pvc
+  name: gitea-db-pvc
   namespace: rt
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: do-block-storage
   resources:
     requests:
-      storage: 10Gi
+      storage: 1Gi
