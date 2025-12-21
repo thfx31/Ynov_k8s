@@ -2,11 +2,9 @@ all:
   children:
     master:
       hosts:
-        # kube-tf-master:
         kube-master01:
 
     workers:
       hosts:
-        # kube-tf-worker01:
         kube-worker01:
  

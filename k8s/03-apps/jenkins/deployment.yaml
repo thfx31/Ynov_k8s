@@ -14,7 +14,7 @@ spec:
         app: jenkins
     spec:
       imagePullSecrets:
-        - name: regcred
+        - name: dockerhub-auth-secret
       securityContext:
         fsGroup: 1000  
       containers:
