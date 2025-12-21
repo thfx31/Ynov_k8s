@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitea-ingress
+  namespace: rt
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    acme.cert-manager.io/http01-edit-in-place: "true"  
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - gitea.IP_LB_PLACEHOLDER
+    secretName: gitea-tls-secret
+  rules:
+  - host: gitea.IP_LB_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gitea-svc
+            port:
+              number: 80

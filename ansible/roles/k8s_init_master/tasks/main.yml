@@ -1,0 +1,49 @@
+---
+- name: Copy kubeadm config file for Digital Ocean
+  ansible.builtin.copy:
+    src: kubeadm-config.yaml
+    dest: /etc/kubernetes/kubeadm-config.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Workaround - Add Public IP to Loopback to avoid routing deadlock
+  ansible.builtin.command:
+    cmd: "ip addr add {{ ansible_facts['default_ipv4']['address'] }}/32 dev lo"
+  changed_when: false
+  ignore_errors: true
+
+- name: Initialise Kubernetes control plane with config
+  ansible.builtin.command: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml --upload-certs
+  args:
+    creates: /etc/kubernetes/admin.conf
+  register: kubeadm_init_output
+
+- name: Ensure .kube directory exists
+  ansible.builtin.file:
+    path: /root/.kube
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Copy admin.conf to root kubeconfig
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: true
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Generate join command dynamically
+  ansible.builtin.command: kubeadm token create --print-join-command
+  register: kubeadm_join_cmd_raw
+
+- name: Store join command as fact on master
+  ansible.builtin.set_fact:
+    kubeadm_join_command: "{{ kubeadm_join_cmd_raw.stdout }}"
+
+- name: Print Kubernetes join command
+  ansible.builtin.debug:
+    msg: "Join command: {{ kubeadm_join_command }}"

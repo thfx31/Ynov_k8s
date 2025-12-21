@@ -1,0 +1,35 @@
+---
+- name: Ensure master_host variable is defined
+  ansible.builtin.assert:
+    that:
+      - master_host is defined
+    fail_msg: "La variable master_host doit être définie."
+
+- name: Ensure join command fact exists on master
+  ansible.builtin.assert:
+    that:
+      - hostvars[master_host]['kubeadm_join_command'] is defined
+    fail_msg: "kubeadm_join_command n'est pas défini sur le master."
+
+- name: Get join command from master hostvars
+  ansible.builtin.set_fact:
+    kubeadm_join_command: "{{ hostvars[master_host]['kubeadm_join_command'] }}"
+
+- name: Configure Kubelet with External Cloud Provider args
+  ansible.builtin.copy:
+    dest: /etc/default/kubelet
+    content: 'KUBELET_EXTRA_ARGS="--cloud-provider=external"'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Reset Kubernetes node before join (idempotent)
+  ansible.builtin.command: kubeadm reset -f
+  args:
+    removes: /etc/kubernetes/kubelet.conf
+  ignore_errors: true
+
+- name: Join node to Kubernetes cluster
+  ansible.builtin.command: "{{ kubeadm_join_command }}"
+  args:
+    creates: /etc/kubernetes/kubelet.conf

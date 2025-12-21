@@ -1,0 +1,12 @@
+---
+- hosts: master
+  roles:
+    - k8s_prereqs
+    - k8s_init_master
+
+- hosts: workers
+  vars:
+    master_host: "{{ groups['master'][0] }}"
+  roles:
+    - k8s_prereqs
+    - k8s_join_worker

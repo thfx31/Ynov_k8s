@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  namespace: rt
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      imagePullSecrets:
+      - name: dockerhub-auth-secret
+      containers:
+        - name: gitea
+          image: thfx31/ynov:gitea-v1
+          ports:
+            - containerPort: 3000
+            - containerPort: 22
+          env:
+            - name: GITEA__database__DB_TYPE
+              value: postgres
+            - name: GITEA__database__HOST
+              value: gitea-db-svc:5432
+            - name: GITEA__database__NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-db
+            - name: GITEA__database__USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-user
+            - name: GITEA__database__PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-password
+          volumeMounts:
+            - name: gitea-data
+              mountPath: /data
+      volumes:
+        - name: gitea-data
+          persistentVolumeClaim:
+            claimName: gitea-pvc
+
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: gitea
+#   namespace: rt
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: gitea
+#   template:
+#     metadata:
+#       labels:
+#         app: gitea
+#     spec:
+#       imagePullSecrets:
+#       - name: regcred
+#       containers:
+#         - name: gitea
+#           image: thfx31/ynov:gitea-v1
+#           ports:
+#             - containerPort: 3000
+#             - containerPort: 22
+#           env:
+#             - name: GITEA__database__DB_TYPE
+#               value: postgres
+#             - name: GITEA__database__HOST
+#               value: gitea-db:5432
+#             - name: GITEA__database__NAME
+#               value: gitea
+#             - name: GITEA__database__USER
+#               value: gitea
+#             - name: GITEA__database__PASSWD
+#               value: gitea
+#           volumeMounts:
+#             - name: gitea-data
+#               mountPath: /data
+#       volumes:
+#         - name: gitea-data
+#           persistentVolumeClaim:
+#             claimName: gitea-pvc

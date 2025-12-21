@@ -1,0 +1,10 @@
+all:
+  children:
+    master:
+      hosts:
+        kube-master01:
+
+    workers:
+      hosts:
+        kube-worker01:
+ 

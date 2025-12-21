@@ -1,0 +1,144 @@
+---
+- name: Check OS (Ubuntu only)
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] == "Debian"
+      - ansible_facts['distribution'] == "Ubuntu"
+    fail_msg: "Ce rôle est prévu pour Ubuntu uniquement."
+
+- name: Install APT prerequisites
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gpg
+    state: present
+    update_cache: true
+
+- name: Create keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add Kubernetes apt key
+  ansible.builtin.shell: |
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ k8s_prereqs_k8s_repo_version }}/deb/Release.key \
+    | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes apt repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    mode: "0644"
+    content: |
+      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ k8s_prereqs_k8s_repo_version }}/deb/ /
+  register: k8s_repo
+
+- name: Install Kubernetes & containerd packages
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+      - cri-tools
+      - containerd
+    state: present
+
+- name: Ensure kubelet is enabled
+  ansible.builtin.service:
+    name: kubelet
+    enabled: true
+    state: stopped
+
+- name: Add Helm GPG key (official Buildkite repo)
+  ansible.builtin.shell: |
+    curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey \
+      | gpg --dearmor \
+      | tee /usr/share/keyrings/helm.gpg > /dev/null
+  args:
+    creates: /usr/share/keyrings/helm.gpg
+
+- name: Add Helm APT repository (official)
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/helm-stable-debian.list
+    mode: '0644'
+    content: |
+      deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main
+
+- name: Install Helm package (Master only)
+  ansible.builtin.apt:
+    name: helm
+    state: present
+    update_cache: true
+  when: inventory_hostname in groups['master']
+
+- name: Ensure containerd config directory exists
+  ansible.builtin.file:
+    path: "{{ k8s_prereqs_containerd_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Check if containerd config exists
+  ansible.builtin.stat:
+    path: "{{ k8s_prereqs_containerd_config }}"
+  register: containerd_cfg
+
+- name: Generate default containerd config
+  ansible.builtin.command: containerd config default
+  register: containerd_default_cfg
+  when: not containerd_cfg.stat.exists
+  changed_when: true
+
+- name: Write containerd config file from default
+  ansible.builtin.copy:
+    dest: "{{ k8s_prereqs_containerd_config }}"
+    content: "{{ containerd_default_cfg.stdout }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: not containerd_cfg.stat.exists
+  notify: restart containerd
+
+- name: Enable SystemdCgroup in containerd config
+  ansible.builtin.replace:
+    path: "{{ k8s_prereqs_containerd_config }}"
+    regexp: 'SystemdCgroup\s*=\s*false'
+    replace: 'SystemdCgroup = true'
+  notify: restart containerd
+
+- name: Ensure containerd service is enabled and running
+  ansible.builtin.service:
+    name: containerd
+    state: started
+    enabled: true
+
+- name: Enable IPv4 forwarding
+  ansible.builtin.sysctl:
+    name: net.ipv4.ip_forward
+    value: "{{ k8s_prereqs_sysctl_ip_forward }}"
+    state: present
+    sysctl_file: "{{ k8s_prereqs_sysctl_file }}"
+    reload: true
+
+- name: Create kernel modules config
+  ansible.builtin.copy:
+    dest: "{{ k8s_prereqs_modules_conf }}"
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {% for mod in k8s_prereqs_modules %}
+      {{ mod }}
+      {% endfor %}
+
+- name: Load required kernel modules
+  ansible.builtin.command: "modprobe {{ item }}"
+  loop: "{{ k8s_prereqs_modules }}"
+  register: modprobe_result
+  changed_when: false

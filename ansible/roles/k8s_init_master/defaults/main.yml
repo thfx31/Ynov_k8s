@@ -1,0 +1,3 @@
+---
+k8s_init_pod_network_cidr: "192.168.0.0/16"   # pour Calico
+k8s_init_cri_socket: "unix:///run/containerd/containerd.sock"
