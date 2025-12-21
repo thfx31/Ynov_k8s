@@ -3,10 +3,17 @@ kind: Ingress
 metadata:
   name: forge-ingress
   namespace: rt
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    acme.cert-manager.io/http01-edit-in-place: "true"
 spec:
   ingressClassName: nginx
+  tls:
+  - hosts:
+    - forge.IP_LB_PLACEHOLDER
+    secretName: forge-tls-secret
   rules:
-  - host: forge.IP_LB_PLACEHOLDER.nip.io
+  - host: forge.IP_LB_PLACEHOLDER
     http:
       paths:
       - path: /

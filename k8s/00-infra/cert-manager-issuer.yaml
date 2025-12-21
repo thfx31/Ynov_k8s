@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # 1. L'API de Let's Encrypt
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # 2. Ton email (pour les alertes d'expiration)
+    email: contact@thfx.fr
+    # 3. Le nom du secret où la clé privée du compte ACME sera stockée
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    # 4. Méthode de preuve (Challenge HTTP-01 via Nginx)
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
