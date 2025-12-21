@@ -542,7 +542,7 @@ show_menu() {
     echo -e "${BLUE}============================================================${NC}"
     
     echo -e "\n${CYAN}[ CLUSTER INFRASTRUCTURE ]${NC}"
-    echo -e "  1.   ${GREEN}DEPLOIEMENT COMPOSANTS (Step 2 to 6)${NC}"
+    echo -e "  1.   ${GREEN}DEPLOIEMENT COMPOSANTS (étape 2 à 6)${NC}"
     echo    "  2.   Calico (CNI)"
     echo    "  3.   Cloud Controller Manager (CCM DigitalOcean)"
     echo    "  4.   Storage (CSI DigitalOcean)"

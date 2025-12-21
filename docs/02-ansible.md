@@ -3,7 +3,7 @@
 ## Description des rôles
 
 **k8s_prereqs**
-```shell
+```
 - Installation des packages de base
 - Installation de Helm
 - Installation de kubeadm, kubelet, kubctl, containerd
@@ -16,7 +16,7 @@
 
 &nbsp;
 **k8s_init_master**
-```shell
+```
 - Copie la config kubeadm
 - Initialise le control plane
 - Stocke le join token dans une variable
@@ -27,17 +27,21 @@
 
 &nbsp;
 **k8s_join_worker**
-```shell
+```
 - Récupère le join token
 - Configure le node pour un external cloud provider
 - Ajoute le node au cluster
 ```
 
+---
+
 ## Set up droplets
 Créer 2 droplets Ubuntu 24.04 (machines virtuelles) dans l'espace DigitalOcean.
 
+---
+
 ## Virtualenv
-Créer un virtualenv sur le controleur Ansible
+Créer un **virtualenv** sur le controleur Ansible
 ```shell
 # Prerequisites
 sudo apt-get install python3-venv
@@ -49,19 +53,38 @@ python3 -m venv ~/.virtualenvs/ansible
 source ~/.virtualenvs/ansible/bin/activate
 ```
 
+---
+
 ## Host file
-Ajouter le hostname et l'IP des serveurs dans le fichier /etc/hosts du controleur Ansible.
+Ajouter le **hostname** et l'**IP** des serveurs dans le fichier `/etc/hosts` du controleur Ansible.
 ```shell
 sudo vim /etc/hosts
 ```
+---
 
 ## Inventory
-Editer le fichier inventory.yml et ajouter les droptlets
+Editer le fichier **inventory.yml** et ajouter les droptlets
+```yaml
+all:
+  children:
+    master:
+      hosts:
+        kube-master01:
+
+    workers:
+      hosts:
+        kube-worker01:
+```
+
+---
 
 ## Run cluster.yml playbook
 ```shell
+cd ansible
 ansible-playbook -i inventory.yml cluster.yml
 ```
+
+---
 
 ## Check your Kubernetes cluster
 ```shell
