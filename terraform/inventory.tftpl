@@ -1,0 +1,16 @@
+[master]
+%{ for name, node in nodes ~}
+%{ if name == "kube-master" ~}
+${name} ansible_host=${node.ipv4_address} ansible_user=root
+%{ endif ~}
+%{ endfor ~}
+
+[workers]
+%{ for name, node in nodes ~}
+%{ if name != "kube-master" ~}
+${name} ansible_host=${node.ipv4_address} ansible_user=root
+%{ endif ~}
+%{ endfor ~}
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
