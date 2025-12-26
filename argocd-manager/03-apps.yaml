@@ -17,4 +17,10 @@ spec:
     server: 'https://kubernetes.default.svc'
     namespace: rt
   syncPolicy:
-    automated: { prune: true, selfHeal: true }
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true 
