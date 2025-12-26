@@ -10,10 +10,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - gitea.IP_LB_PLACEHOLDER
+    - gitea.yplank.fr
     secretName: gitea-tls-secret
   rules:
-  - host: gitea.IP_LB_PLACEHOLDER
+  - host: gitea.yplank.fr
     http:
       paths:
       - path: /

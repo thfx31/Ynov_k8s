@@ -10,10 +10,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - forge.IP_LB_PLACEHOLDER
+    - forge.yplank.fr
     secretName: forge-tls-secret
   rules:
-  - host: forge.IP_LB_PLACEHOLDER
+  - host: forge.yplank.fr
     http:
       paths:
       - path: /
