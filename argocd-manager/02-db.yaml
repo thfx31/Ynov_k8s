@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: layer-02-db
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/thfx31/Ynov_k8s.git'
+    targetRevision: feat/gitops
+    path: k8s/02-database
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: rt # Le namespace cible pour tes DB
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }

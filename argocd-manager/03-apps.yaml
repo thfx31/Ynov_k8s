@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: layer-03-apps
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/thfx31/Ynov_k8s.git'
+    targetRevision: feat/gitops
+    path: k8s/03-apps
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: rt
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
