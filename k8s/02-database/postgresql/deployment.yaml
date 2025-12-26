@@ -13,8 +13,6 @@ spec:
       labels:
         app: gitea-db
     spec:
-      imagePullSecrets:
-      - name: regcred
       containers:
       - name: postgres
         image: thfx31/ynov:postgres-v1

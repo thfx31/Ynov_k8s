@@ -11,6 +11,8 @@ spec:
     repoURL: 'https://github.com/thfx31/Ynov_k8s.git'
     targetRevision: feat/gitops
     path: k8s/01-initialisation
+    directory:
+      recurse: true
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd

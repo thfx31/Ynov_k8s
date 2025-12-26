@@ -13,8 +13,6 @@ spec:
       labels:
         app: jenkins
     spec:
-      imagePullSecrets:
-        - name: dockerhub-auth-secret
       securityContext:
         fsGroup: 1000  
       containers:
