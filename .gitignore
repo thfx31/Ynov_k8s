@@ -11,6 +11,5 @@ override.tf
 override.tf.json
 
 # Environment variables
-*.env
 .env-do
 .env-docker
