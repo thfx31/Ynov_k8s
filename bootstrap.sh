@@ -6,8 +6,11 @@ set -eo pipefail
 # Variables
 INFRA_DIR="k8s/00-infra"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="$SCRIPT_DIR/.env-do"
+ENV_DO="$SCRIPT_DIR/.env-do"
+ENV_DOCKER="$SCRIPT_DIR/.env-docker"
+
 TIMEOUT="300s"
+NS="rt"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -18,24 +21,51 @@ NC='\033[0m' # No Color
 
 info() { echo -e "${CYAN}>> $1${NC}"; }
 
-# Chargement des variables d'environnement
-if [ -f "$ENV_FILE" ]; then
-    set -a && source "$ENV_FILE" && set +a
-    echo ""
-    echo -e "${GREEN}Variables d'environnement chargées${NC}"
+
+
+# Chargement DigitalOcean (.env)
+if [ -f "$ENV_DO" ]; then
+    set -a && source "$ENV_DO" && set +a
+    echo -e "${GREEN}Variables DigitalOcean chargées${NC}"
 else
-    echo -e "${RED}Erreur : Fichier .env absent.${NC}" && exit 1
+    echo -e "${RED}Erreur : Fichier .env-do absent.${NC}" && exit 1
 fi
+
+# Chargement Docker Hub (.env-docker)
+if [ -f "$ENV_DOCKER" ]; then
+    set -a && source "$ENV_DOCKER" && set +a
+    echo -e "${GREEN}Variables Docker Hub chargées${NC}"
+else
+    echo -e "${RED}Erreur : Fichier .env-docker absent.${NC}" && exit 1
+fi
+
+echo ""
+echo -e "${BLUE}---------------------------------------${NC}"
+echo "  Création namespace & secrets"
+echo -e "${BLUE}---------------------------------------${NC}"
+
+# Création du namespace RT
+echo "Création du namespace ${NS}..."
+kubectl create namespace ${NS} --dry-run=client -o yaml | kubectl apply -f -
+
+# Création du secret DigitalOcean
+echo "Création du secret DigitalOcean..."
+kubectl create secret generic digitalocean -n kube-system \
+  --from-literal=access-token="$DO_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
+
+# Création du secret Docker Registry
+echo "Création du secret Docker Registry..."
+kubectl create secret docker-registry dockerhub-auth-secret -n ${NS} \
+  --docker-server="$DOCKER_REGISTRY" \
+  --docker-username="$DOCKER_USERNAME" \
+  --docker-password="$DOCKER_PASSWORD" \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 echo ""
 echo -e "${BLUE}---------------------------------------${NC}"
 echo "  Installation des composants"
 echo -e "${BLUE}---------------------------------------${NC}"
 
-# Création du secret DigitalOcean
-echo "Création du secret DigitalOcean..."
-kubectl create secret generic digitalocean -n kube-system \
-  --from-literal=access-token="$DO_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
 
 # Installation des composants (CCM / CSI)
 kubectl apply -f $INFRA_DIR/cni-calico.yaml
