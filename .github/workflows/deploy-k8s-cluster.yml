@@ -1,0 +1,88 @@
+name: "Platform Deployment One-Shot"
+on:
+  workflow_dispatch:
+
+jobs:
+  full-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.3
+
+      # --- 1. TERRAFORM : Provisionnement ---
+      - name: Terraform Apply
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+          TF_VAR_ssh_key_name: ${{ secrets.DO_SSH_KEY_NAME }}
+        run: |
+          cd terraform
+          terraform init
+          terraform apply -auto-approve
+          terraform output -raw hosts_ini > ../ansible/hosts.ini
+
+      # --- 2. ANSIBLE : Installation Kubeadm ---
+      - name: Ansible Kubeadm Setup
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - run: |
+          cd ansible
+          pip install ansible
+          ansible-playbook -i hosts.ini cluster.yml
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+
+# --- 3. INFRA & SECRETS (Mapping rigoureux de l'ancienne CI) ---
+      - name: Setup Infrastructure & Secrets
+        env:
+          DO_TOKEN: ${{ secrets.DO_TOKEN }}
+          D_USER: ${{ secrets.DOCKER_USERNAME }}
+          D_PASS: ${{ secrets.DOCKER_PASSWORD }}
+          P_USER: ${{ secrets.POSTGRES_USERNAME }}
+          P_PASS: ${{ secrets.POSTGRES_PASSWORD }}
+          P_DB: ${{ secrets.POSTGRES_DB }}
+        run: |
+          export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml
+          INFRA_DIR="k8s/00-infra"
+          
+          # Création du namespace pour tes apps
+          kubectl create namespace rt --dry-run=client -o yaml | kubectl apply -f -
+
+          # A. Secret DigitalOcean (Mapping access-token)
+          kubectl create secret generic digitalocean -n kube-system \
+            --from-literal=access-token="$DO_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          # B. Secret Docker Hub (Mapping registry standard)
+          kubectl create secret docker-registry dockerhub-auth-secret \
+            --docker-username="$D_USER" \
+            --docker-password="$D_PASS" \
+            --namespace=rt --dry-run=client -o yaml | kubectl apply -f -
+
+          # C. Secret Postgres (Mapping exact : postgres-user, postgres-password, postgres-db)
+          kubectl create secret generic postgres-secret \
+            --from-literal=postgres-user="$P_USER" \
+            --from-literal=postgres-password="$P_PASS" \
+            --from-literal=postgres-db="$P_DB" \
+            --namespace=rt --dry-run=client -o yaml | kubectl apply -f -
+
+          # D. Installation des composants d'Infrastructure locaux
+          kubectl apply -f $INFRA_DIR/cni-calico.yaml
+          kubectl apply -f $INFRA_DIR/ccm-do.yaml
+          kubectl apply -f $INFRA_DIR/csi-crds-do.yaml
+          kubectl apply -f $INFRA_DIR/csi-driver-do.yaml
+
+      # --- 4. GITOPS : Argo CD & Root App ---
+      - name: Launch Argo CD
+        run: |
+          export KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml
+          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+          
+          # Lancement de la Root App qui déploie tout le reste
+          kubectl apply -f argocd-manager/root-app.yaml

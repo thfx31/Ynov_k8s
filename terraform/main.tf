@@ -1,6 +1,6 @@
 # Création d'une VM (Droplet)
 resource "digitalocean_droplet" "k8s_vm" {
-  for_each = toset(["kube-master", "kube-worker1"])   
+  for_each = toset(["kube-master", "kube-worker01", "kube-worker02"])   
   name     = each.key
   size     = "s-2vcpu-2gb"
   image    = "ubuntu-24-04-x64"

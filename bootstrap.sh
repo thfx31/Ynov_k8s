@@ -8,7 +8,6 @@ INFRA_DIR="k8s/00-infra"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_DO="$SCRIPT_DIR/.env-do"
 ENV_DOCKER="$SCRIPT_DIR/.env-docker"
-
 TIMEOUT="300s"
 NS="rt"
 
@@ -19,47 +18,46 @@ CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Fonction d'affichage d'information
 info() { echo -e "${CYAN}>> $1${NC}"; }
 
+# # Chargement DigitalOcean (.env)
+# if [ -f "$ENV_DO" ]; then
+#     set -a && source "$ENV_DO" && set +a
+#     echo -e "${GREEN}Variables DigitalOcean chargées${NC}"
+# else
+#     echo -e "${RED}Erreur : Fichier .env-do absent.${NC}" && exit 1
+# fi
 
+# # Chargement Docker Hub (.env-docker)
+# if [ -f "$ENV_DOCKER" ]; then
+#     set -a && source "$ENV_DOCKER" && set +a
+#     echo -e "${GREEN}Variables Docker Hub chargées${NC}"
+# else
+#     echo -e "${RED}Erreur : Fichier .env-docker absent.${NC}" && exit 1
+# fi
 
-# Chargement DigitalOcean (.env)
-if [ -f "$ENV_DO" ]; then
-    set -a && source "$ENV_DO" && set +a
-    echo -e "${GREEN}Variables DigitalOcean chargées${NC}"
-else
-    echo -e "${RED}Erreur : Fichier .env-do absent.${NC}" && exit 1
-fi
+# echo ""
+# echo -e "${BLUE}---------------------------------------${NC}"
+# echo "  Création namespace & secrets"
+# echo -e "${BLUE}---------------------------------------${NC}"
 
-# Chargement Docker Hub (.env-docker)
-if [ -f "$ENV_DOCKER" ]; then
-    set -a && source "$ENV_DOCKER" && set +a
-    echo -e "${GREEN}Variables Docker Hub chargées${NC}"
-else
-    echo -e "${RED}Erreur : Fichier .env-docker absent.${NC}" && exit 1
-fi
+# # Création du namespace RT
+# echo "Création du namespace ${NS}..."
+# kubectl create namespace ${NS} --dry-run=client -o yaml | kubectl apply -f -
 
-echo ""
-echo -e "${BLUE}---------------------------------------${NC}"
-echo "  Création namespace & secrets"
-echo -e "${BLUE}---------------------------------------${NC}"
+# # Création du secret DigitalOcean
+# echo "Création du secret DigitalOcean..."
+# kubectl create secret generic digitalocean -n kube-system \
+#   --from-literal=access-token="$DO_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
 
-# Création du namespace RT
-echo "Création du namespace ${NS}..."
-kubectl create namespace ${NS} --dry-run=client -o yaml | kubectl apply -f -
-
-# Création du secret DigitalOcean
-echo "Création du secret DigitalOcean..."
-kubectl create secret generic digitalocean -n kube-system \
-  --from-literal=access-token="$DO_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
-
-# Création du secret Docker Registry
-echo "Création du secret Docker Registry..."
-kubectl create secret docker-registry dockerhub-auth-secret -n ${NS} \
-  --docker-server="$DOCKER_REGISTRY" \
-  --docker-username="$DOCKER_USERNAME" \
-  --docker-password="$DOCKER_PASSWORD" \
-  --dry-run=client -o yaml | kubectl apply -f -
+# # Création du secret Docker Registry
+# echo "Création du secret Docker Registry..."
+# kubectl create secret docker-registry dockerhub-auth-secret -n ${NS} \
+#   --docker-server="$DOCKER_REGISTRY" \
+#   --docker-username="$DOCKER_USERNAME" \
+#   --docker-password="$DOCKER_PASSWORD" \
+#   --dry-run=client -o yaml | kubectl apply -f -
 
 echo ""
 echo -e "${BLUE}---------------------------------------${NC}"

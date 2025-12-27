@@ -13,6 +13,8 @@ spec:
       labels:
         app: gitea-db
     spec:
+      imagePullSecrets:
+      - name: dockerhub-auth-secret    
       containers:
       - name: postgres
         image: thfx31/ynov:postgres-v1
