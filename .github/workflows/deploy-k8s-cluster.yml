@@ -12,12 +12,13 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.14.3
-
+ 
       # --- 1. TERRAFORM : Provisionnement ---
       - name: Terraform Apply
         env:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
           TF_VAR_ssh_key_name: ${{ secrets.DO_SSH_KEY_NAME }}
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
         run: |
           cd terraform
           terraform init
@@ -86,3 +87,11 @@ jobs:
           
           # Lancement de la Root App qui déploie tout le reste
           kubectl apply -f argocd-manager/root-app.yaml
+      
+          
+      - name: Save Kubeconfig as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-kubeconfig
+          path: kubeconfig.yaml
+          retention-days: 7    

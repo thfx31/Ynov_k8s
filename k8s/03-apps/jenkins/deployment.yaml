@@ -16,15 +16,15 @@ spec:
       securityContext:
         fsGroup: 1000
       imagePullSecrets:
-      - name: dockerhub-auth-secret
+        - name: dockerhub-auth-secret
       containers:
-      - name: jenkins
-        image: thfx31/ynov:jenkins-v1
-        ports:
-        - containerPort: 8080
-        volumeMounts:
-          - name: jenkins-home
-            mountPath: /var/jenkins_home
+        - name: jenkins
+          image: thfx31/ynov:jenkins-v1
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
       volumes:
         - name: jenkins-home
           persistentVolumeClaim:

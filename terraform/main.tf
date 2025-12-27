@@ -1,3 +1,13 @@
+terraform {
+  cloud {
+    organization = "TFX31"
+
+    workspaces {
+      name = "ynov-k8s"
+    }
+  }
+}
+
 # Création d'une VM (Droplet)
 resource "digitalocean_droplet" "k8s_vm" {
   for_each = toset(["kube-master", "kube-worker01", "kube-worker02"])   
