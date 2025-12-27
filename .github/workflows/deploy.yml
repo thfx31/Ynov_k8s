@@ -1,4 +1,4 @@
-name: Auto-Seal Secrets
+name: Platform deployment
 on:
   workflow_dispatch:
 
