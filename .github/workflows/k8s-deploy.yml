@@ -1,4 +1,4 @@
-name: "Platform deployment"
+name: Kubernetes platform deployment
 
 on:
   workflow_dispatch:
@@ -120,32 +120,6 @@ jobs:
             kubectl apply -f k8s/00-infra/csi-crds-do.yaml
             kubectl apply -f k8s/00-infra/csi-driver-do.yaml
 
-
-    #   - name: Create Secrets with ArgoCD Tracking
-    #     env:
-    #       DO_TOKEN: ${{ secrets.DO_TOKEN }}
-    #       D_USER: ${{ secrets.DOCKER_USERNAME }}
-    #       D_PASS: ${{ secrets.DOCKER_PASSWORD }}
-    #       P_USER: ${{ secrets.POSTGRES_USERNAME }}
-    #       P_PASS: ${{ secrets.POSTGRES_PASSWORD }}
-    #       P_DB: ${{ secrets.POSTGRES_DB }}
-    #     run: |
-    #       export KUBECONFIG=./kubeconfig.yaml
-
-        #   # On s'assure que le namespace existe
-        #   kubectl create namespace rt --dry-run=client -o yaml | kubectl apply -f - 
-         
-        #   # Secrets (DO, Docker, Postgres)
-        #   kubectl create secret generic digitalocean -n kube-system --from-literal=access-token="$DO_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
-        #   kubectl create secret docker-registry dockerhub-auth-secret --docker-username="$D_USER" --docker-password="$D_PASS" --namespace=rt --dry-run=client -o yaml | kubectl apply -f -
-        #   kubectl create secret generic postgres-secret --from-literal=postgres-user="$P_USER" --from-literal=postgres-password="$P_PASS" --from-literal=postgres-db="$P_DB" --namespace=rt --dry-run=client -o yaml | kubectl apply -f -
-
-        #   # Infra manifests
-        #   kubectl apply -f k8s/00-infra/cni-calico.yaml
-        #   kubectl apply -f k8s/00-infra/ccm-do.yaml
-        #   kubectl apply -f k8s/00-infra/csi-crds-do.yaml
-        #   kubectl apply -f k8s/00-infra/csi-driver-do.yaml
-
   # --- JOB 4 : GITOPS (Argo CD) ---
   gitops:
     name: "Argo CD & Apps"
@@ -168,7 +142,7 @@ jobs:
           kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
           kubectl apply -f argocd-manager/root-app.yaml
 
-      - name: 📢 Dashboard du déploiement
+      - name: Dashboard du déploiement
         if: always()
         run: |
           export KUBECONFIG=./kubeconfig.yaml
@@ -211,4 +185,4 @@ jobs:
           echo "- Jenkins : \`kubectl port-forward -n rt svc/jenkins-svc 8085:80\`" >> $GITHUB_STEP_SUMMARY
 
           echo -e "\n### 📦 Artefacts de session" >> $GITHUB_STEP_SUMMARY
-          echo "Les fichiers \`kubeconfig.yaml\` et \`hosts.ini\` sont disponibles en téléchargement tout en bas de cette page dans la section **Artifacts**." >> $GITHUB_STEP_SUMMARY
+          echo "Les fichiers \`kubeconfig.yaml\` et \`hosts.ini\` sont disponibles en téléchargement dans la section **Artifacts**." >> $GITHUB_STEP_SUMMARY
