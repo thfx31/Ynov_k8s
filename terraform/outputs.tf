@@ -5,7 +5,6 @@ ${digitalocean_droplet.k8s_vm["kube-master"].ipv4_address}
 
 [workers]
 ${digitalocean_droplet.k8s_vm["kube-worker01"].ipv4_address}
-${digitalocean_droplet.k8s_vm["kube-worker02"].ipv4_address}
 EOF
 }
 

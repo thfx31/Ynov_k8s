@@ -10,9 +10,9 @@ terraform {
 
 # Création d'une VM (Droplet)
 resource "digitalocean_droplet" "k8s_vm" {
-  for_each = toset(["kube-master", "kube-worker01", "kube-worker02"])   
+  for_each = toset(["kube-master", "kube-worker01"])   
   name     = each.key
-  size     = "s-2vcpu-2gb"
+  size     = "s-2vcpu-4gb"
   image    = "ubuntu-24-04-x64"
   region   = var.region
   ssh_keys = [data.digitalocean_ssh_key.my_key.id]

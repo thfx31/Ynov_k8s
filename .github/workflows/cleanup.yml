@@ -31,9 +31,13 @@ jobs:
         run: |
           if [ -f "kubeconfig.yaml" ]; then
             export KUBECONFIG=./kubeconfig.yaml
+
             echo "Suppression du namespace applicatif (Nettoyage des volumes CSI)..."
             # On attend que les volumes soient réellement supprimés côté DigitalOcean
             kubectl delete namespace rt --wait=true --timeout=5m || true
+
+            echo "Suppression du LoadBalancer (Ingress Nginx)..."
+            kubectl delete namespace ingress-nginx --wait=true --timeout=5m || true            
             
             echo "Suppression d'Argo CD..."
             kubectl delete namespace argocd --wait=true --timeout=5m || true

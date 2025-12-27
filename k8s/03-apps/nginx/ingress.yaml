@@ -20,6 +20,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: web-forge
+            name: web-forge-svc
             port:
               number: 80
