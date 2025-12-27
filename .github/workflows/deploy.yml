@@ -1,4 +1,4 @@
-name: Platform deployment
+name: Kubernetes platform deployment
 on:
   workflow_dispatch:
 
