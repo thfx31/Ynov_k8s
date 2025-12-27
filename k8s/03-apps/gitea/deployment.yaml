@@ -13,8 +13,12 @@ spec:
       labels:
         app: gitea
     spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nc -vz gitea-db-svc 5432; do echo waiting for db; sleep 2; done;']    
       imagePullSecrets:
-      - name: dockerhub-auth-secret
+        - name: dockerhub-auth-secret
       containers:
         - name: gitea
           image: thfx31/ynov:gitea-v1

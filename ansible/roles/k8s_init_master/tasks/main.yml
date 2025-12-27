@@ -36,6 +36,12 @@
     group: root
     mode: '0600'
 
+- name: Récupérer le admin.conf du master
+  ansible.builtin.fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: ../kubeconfig.yaml
+    flat: yes
+
 - name: Generate join command dynamically
   ansible.builtin.command: kubeadm token create --print-join-command
   register: kubeadm_join_cmd_raw

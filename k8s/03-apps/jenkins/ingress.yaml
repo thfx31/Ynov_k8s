@@ -10,10 +10,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - jenkins.IP_LB_PLACEHOLDER
+    - jenkins.yplank.fr
     secretName: jenkins-tls-secret
   rules:
-  - host: jenkins.IP_LB_PLACEHOLDER
+  - host: jenkins.yplank.fr
     http:
       paths:
       - path: /

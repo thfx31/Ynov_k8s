@@ -1,9 +1,188 @@
 name: Kubernetes platform deployment
+
 on:
   workflow_dispatch:
 
 jobs:
-  dummy:
+  # --- JOB 1 : PROVISIONING (Terraform) ---
+  provisioning:
+    name: "Infrastructure Provisioning"
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Ce squelette permet d'activer le bouton sur l'interface"
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.3"
+
+      - name: Terraform Apply
+        env:
+          TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
+          TF_VAR_ssh_key_name: ${{ secrets.DO_SSH_KEY_NAME }}
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+        run: |
+          cd terraform
+          terraform init
+          terraform apply -auto-approve
+          terraform output -raw hosts_ini > ../ansible/hosts.ini
+
+      - name: Upload Inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: ansible-inventory
+          path: ansible/hosts.ini
+
+  # --- JOB 2 : CLUSTER SETUP (Ansible) ---
+  cluster-setup:
+    name: "K8s Cluster Installation"
+    needs: provisioning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Inventory
+        uses: actions/download-artifact@v4
+        with:
+          name: ansible-inventory
+          path: ansible/
+
+      - name: Ansible Kubeadm Setup
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      
+      - name: Run Playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          cd ansible
+          pip install ansible
+          ansible-playbook -i hosts.ini cluster.yml
+
+      - name: Upload Kubeconfig
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-kubeconfig
+          path: kubeconfig.yaml
+
+  # --- JOB 3 : INFRA & SECRETS (Kubectl) ---
+  infra-secrets:
+    name: "K8s Infra & Secrets"
+    needs: cluster-setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Kubeconfig
+        uses: actions/download-artifact@v4
+        with:
+          name: cluster-kubeconfig
+          path: ./
+
+      - name: Create Secrets with ArgoCD Tracking
+        env:
+            NS: rt
+            DO_TOKEN: ${{ secrets.DO_TOKEN }}
+            D_USER: ${{ secrets.DOCKER_USERNAME }}
+            D_PASS: ${{ secrets.DOCKER_PASSWORD }}
+            P_USER: ${{ secrets.POSTGRES_USERNAME }}
+            P_PASS: ${{ secrets.POSTGRES_PASSWORD }}
+            P_DB: ${{ secrets.POSTGRES_DB }}
+        run: |
+            export KUBECONFIG=./kubeconfig.yaml
+
+            # On s'assure que le namespace existe
+            kubectl create namespace ${NS} --dry-run=client -o yaml | kubectl apply -f -
+
+            # Secret DigitalOcean (Pas besoin de label Argo car il est hors layer)
+            kubectl create secret generic digitalocean -n kube-system --from-literal=access-token="$DO_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
+        
+            # Création du Secret Docker Hub + étiquette pour Argo CD
+            kubectl create secret docker-registry dockerhub-auth-secret \
+              --docker-username="$D_USER" --docker-password="$D_PASS" \
+              --namespace=rt --dry-run=client -o yaml | kubectl apply -f -
+    
+            kubectl label secret dockerhub-auth-secret -n rt app.kubernetes.io/instance=layer-01-init --overwrite
+
+            # Création du Secret Postgres + étiquette pour Argo CD
+            kubectl create secret generic postgres-secret \
+              --from-literal=postgres-user="$P_USER" \
+              --from-literal=postgres-password="$P_PASS" \
+              --from-literal=postgres-db="$P_DB" \
+              --namespace=rt --dry-run=client -o yaml | kubectl apply -f -
+    
+            kubectl label secret postgres-secret -n rt app.kubernetes.io/instance=layer-01-init --overwrite
+
+            # Déploiement des manifests d'infrastructure
+            kubectl apply -f k8s/00-infra/cni-calico.yaml
+            kubectl apply -f k8s/00-infra/ccm-do.yaml
+            kubectl apply -f k8s/00-infra/csi-crds-do.yaml
+            kubectl apply -f k8s/00-infra/csi-driver-do.yaml
+
+  # --- JOB 4 : GITOPS (Argo CD) ---
+  gitops:
+    name: "Argo CD & Apps"
+    needs: infra-secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Kubeconfig
+        uses: actions/download-artifact@v4
+        with:
+          name: cluster-kubeconfig
+          path: ./
+
+      - name: Launch Argo CD
+        run: |
+          export KUBECONFIG=./kubeconfig.yaml
+          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+          kubectl apply -f argocd-manager/root-app.yaml
+
+      - name: Dashboard du déploiement
+        if: always()
+        run: |
+          export KUBECONFIG=./kubeconfig.yaml
+          
+          # 1. RÉCUPÉRATION DES INFOS DYNAMIQUES
+          # IP du LoadBalancer
+          LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "⏳ En attente...")
+          
+          # Liste des Nodes avec leurs IPs Externes
+          # On extrait le nom et l'IP externe (colonne 1 et 7 dans 'get nodes -o wide')
+          NODE_LIST=$(kubectl get nodes -o wide --no-headers | awk '{print "- **" $1 "** : `" $7 "`"}' | xargs -d '\n')
+
+          # Mot de passe ArgoCD
+          ARGO_PWD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d 2>/dev/null || echo "🔐 Déjà configuré")
+
+          # 2. CONSTRUCTION DU RÉSUMÉ
+          echo "# 🚀 Votre Infrastructure est prête !" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 🖥️ Nodes DigitalOcean (Infrastructure)" >> $GITHUB_STEP_SUMMARY
+          echo "$NODE_LIST" >> $GITHUB_STEP_SUMMARY
+          echo "- **IP LoadBalancer (Ingress)** : \`$LB_IP\`" >> $GITHUB_STEP_SUMMARY
+
+          echo -e "\n### 🌐 Accès Services HTTPS" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | URL | Identifiant |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **ArgoCD** | https://argocd.yplank.fr | \`admin\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Jenkins** | https://jenkins.yplank.fr | \`admin\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Gitea** | https://gitea.yplank.fr | \`user\` |" >> $GITHUB_STEP_SUMMARY
+
+          echo -e "\n### 🔑 Mots de passe et Secrets" >> $GITHUB_STEP_SUMMARY
+          echo "- **ArgoCD Initial PWD** : \`$ARGO_PWD\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Jenkins PWD** : Lancez la commande suivante (attendre 2 min après boot) :" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo 'kubectl exec -n rt $(kubectl get pod -n rt -l app=jenkins -o name | head -n 1) -- cat /var/jenkins_home/secrets/initialAdminPassword' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          echo -e "\n### 🔌 Troubleshooting (Port-Forward)" >> $GITHUB_STEP_SUMMARY
+          echo "Si le DNS \`yplank.fr\` ne répond pas encore :" >> $GITHUB_STEP_SUMMARY
+          echo "- Argo CD : \`kubectl port-forward -n argocd svc/argocd-server 8443:443\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Jenkins : \`kubectl port-forward -n rt svc/jenkins-svc 8085:80\`" >> $GITHUB_STEP_SUMMARY
+
+          echo -e "\n### 📦 Artefacts de session" >> $GITHUB_STEP_SUMMARY
+          echo "Les fichiers \`kubeconfig.yaml\` et \`hosts.ini\` sont disponibles en téléchargement dans la section **Artifacts**." >> $GITHUB_STEP_SUMMARY

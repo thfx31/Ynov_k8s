@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: web-forge-svc
+  name: web-forge
   namespace: rt
 spec:
   replicas: 1
@@ -14,7 +14,7 @@ spec:
         app: web-forge
     spec:
       imagePullSecrets:
-        - name: dockerhub-auth-secret
+        - name: dockerhub-auth-secret    
       containers:
         - image: thfx31/ynov:forge-v1
           name: nginx

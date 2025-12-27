@@ -22,6 +22,23 @@
     state: directory
     mode: "0755"
 
+- name: Wait for APT lock to be released
+  ansible.builtin.shell: |
+    while fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/cache/apt/archives/lock >/dev/null 2>&1; do
+      echo "Waiting for other apt instance to finish..."
+      sleep 5
+    done
+
+- name: Repair and Update APT cache
+  ansible.builtin.shell: |
+    rm -f /var/lib/apt/lists/lock
+    rm -f /var/cache/apt/archives/lock
+    rm -f /var/lib/dpkg/lock*
+    apt-get clean
+    apt-get update
+  register: repair_result
+  failed_when: false
+
 - name: Add Kubernetes apt key
   ansible.builtin.shell: |
     curl -fsSL https://pkgs.k8s.io/core:/stable:/{{ k8s_prereqs_k8s_repo_version }}/deb/Release.key \
