@@ -15,8 +15,6 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
-      imagePullSecrets:
-        - name: dockerhub-auth-secret
       containers:
         - name: jenkins
           image: thfx31/ynov:jenkins-v1

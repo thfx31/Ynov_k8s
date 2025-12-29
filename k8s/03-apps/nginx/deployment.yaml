@@ -13,8 +13,6 @@ spec:
       labels:
         app: web-forge
     spec:
-      # imagePullSecrets:
-      #   - name: dockerhub-auth-secret    
       containers:
         - image: thfx31/ynov:forge-v1
           name: nginx
