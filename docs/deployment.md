@@ -1,12 +1,12 @@
 ## Pipeline de déploiement (Workflow CI/CD)
 Cette section détaille l'orchestration du déploiement automatisé, divisé en 4 Jobs au sein de GitHub Actions.
 
+![GHA](/img/gha-workflow-deploy.png)
+
 ---
 
 ### 1. Principe du pipeline
 Le déploiement suit une logique de **dépendance séquentielle** : chaque étape ne peut démarrer que si la précédente a réussi (`needs: ...`). Cela garantit qu'on ne tente pas de configurer un cluster si les machines n'existent pas encore.
-
-[Image d'un graphique de workflow GitHub Actions montrant les 4 jobs liés : Provisioning -> Cluster-Setup -> Infra-Secrets -> GitOps]
 
 ---
 
@@ -48,6 +48,10 @@ Le workflow utilise la commande `gh run download` ou l'action `upload-artifact` 
 - **Terraform ➔ Ansible** : transmission des adresses IP via hosts.ini
 - **Ansible ➔ Kubectl/Argo CD** : transmission des droits admin via kubeconfig.yaml
 
+<p align="center">
+  <img src="/img/gh-artifacts.png" width="500" alt="Workflow Deployment">
+</p>
+
 --- 
 
 ### 4. Github Step Summary
@@ -56,3 +60,7 @@ Le workflow utilise la commande `gh run download` ou l'action `upload-artifact` 
 - L'IP du LoadBalancer d'entrée
 - Les URLs d'accès (Argo CD, Jenkins, Gitea)
 - Les identifiants de connexion Argo CD et Jenkins
+
+<p align="center">
+  <img src="/img/gh-step-summary.png" width="600" alt="Workflow Deployment">
+</p>
