@@ -5,7 +5,8 @@ Ce projet met en place une **infrastructure DevOps** sur un cluster Kubernetes a
 Réalisation dans le cadre d'un TP **Orchestration Kubernetes** 
 (Mastère **Expert en cloud, sécurité & infrastructure 2024/2026**)
 
-![Argo CD Dashboard](/img/argocd-dashboard.png)
+![Argo CD Dashboard](/docs/sources/argocd-dashboard.png)
+
 ---
 
 ## Architecture Layered GitOps
@@ -17,6 +18,11 @@ Le projet est organisé en couches pilotées par **Argo CD**. Chaque composant e
 | **Layer-01** | Environnement | Namespace
 | **Layer-02** | Data | PostgreSQL (database pour Gitea)
 | **Layer-03** | Apps | Gitea, Jenkins, Nginx-Front
+
+---
+## Architecture de la forge CI/CD
+![Argo CD Dashboard](/docs/sources/diagram-rt.png)
+*Représentation des objects du namespace applicatif RT*
 
 ---
 

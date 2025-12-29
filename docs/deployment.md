@@ -1,7 +1,7 @@
 ## Pipeline de déploiement (Workflow CI/CD)
 Cette section détaille l'orchestration du déploiement automatisé, divisé en 4 Jobs au sein de GitHub Actions.
 
-![GHA](/img/gha-workflow-deploy.png)
+![GHA](/docs/sources/gha-workflow-deploy.png)
 
 ---
 
@@ -49,7 +49,7 @@ Le workflow utilise la commande `gh run download` ou l'action `upload-artifact` 
 - **Ansible ➔ Kubectl/Argo CD** : transmission des droits admin via kubeconfig.yaml
 
 <p align="center">
-  <img src="/img/gh-artifacts.png" width="500" alt="Workflow Deployment">
+  <img src="/docs/sources/gh-artifacts.png" width="500" alt="Workflow Deployment">
 </p>
 
 --- 
@@ -62,5 +62,5 @@ Le workflow utilise la commande `gh run download` ou l'action `upload-artifact` 
 - Les identifiants de connexion Argo CD et Jenkins
 
 <p align="center">
-  <img src="/img/gh-step-summary.png" width="600" alt="Workflow Deployment">
+  <img src="/docs/sources/gh-step-summary.png" width="600" alt="Workflow Deployment">
 </p>

@@ -40,7 +40,7 @@ Pour ajouter un nouvel outil comme du monitoring ou un micro-service :
 
 ---
 
-### 4. Maintenance et troubleshooting
+### 4. Maintenance
 Même avec Argo CD, il est parfois nécessaire d'inspecter manuellement l'état pour comprendre un échec de déploiement.
 
 **Commandes utiles via la CLI**
@@ -55,6 +55,54 @@ Puisque le pipeline GitHub Actions fournit le `kubeconfig.yaml` en artefact, vou
 | **Accès temporaire** | `kubectl port-forward svc/jenkins-svc 8080:80 -n rt` |
 
 ---
+
+### 5. Troubleshooting : problème de téléchargement d'images
+Si un Pod affiche un statut `ImagePullBackOff` ou `ErrImagePull`, suivez ces étapes pour diagnostiquer si le problème vient du mécanisme de `ServiceAccount Patch` ou des identifiants eux-mêmes.
+
+**Vérification de l'injection du secret**
+La première chose à vérifier est de savoir si Kubernetes a bien "injecté" le secret dans le Pod au moment de sa création.
+
+```bash
+kubectl get pod <nom-du-pod> -n rt -o jsonpath='{.spec.imagePullSecrets}'
+```
+- **Résultat attendu** : `[{"name":"dockerhub-auth-secret"}]`
+- **Si vide** `[]` : le Pod a été créé avant l'application du patch ou le `ServiceAccount` n'est pas correctement configuré
+- **Action** : redémarrez le déploiement (`kubectl rollout restart deployment <nom> -n rt`) pour forcer la création d'un nouveau Pod qui bénéficiera de l'injection
+
+
+**Vérification de l'état du Secret**
+Si le secret est bien présent dans le Pod mais que l'image ne descend pas, vérifiez que le secret lui-même existe dans le bon namespace.
+```bash
+kubectl get secret dockerhub-auth-secret -n rt
+```
+- **Si absent** : relancez le workflow GitHub Actions (Job 3) ou recréez le secret manuellement
+- **Note** : le secret doit impérativement se trouver dans le **même namespace** que le Pod pour être utilisé
+
+**Test de validité des identifiants**
+Il est possible que le token Docker Hub ait expiré ou soit erroné. Pour tester les identifiants stockés dans le cluster :
+
+- Récupérez le contenu du secret (encodé en base64) :
+```bash
+kubectl get secret dockerhub-auth-secret -n rt -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d
+```
+- Vérifiez que le JSON affiché contient bien vos identifiants valides
+
+**Analyse des événements du Pod**
+Pour obtenir le message d'erreur exact renvoyé par le registre (ex: *Unauthorized*, *Manifest not found*, *Rate limit exceeded*), consultez les logs système du cluster.
+```bash
+kubectl describe pod <nom-du-pod> -n rt
+```
+Regarder la section Events tout en bas et Chercher les lignes de type `Warning Failed`.
+
+| Erreur | Cause probable | Résolution
+|------------|------|------|
+| **`Unauthorized`** |Token Docker Hub expiré ou erroné | Mettre à jour le secret GitHub `DOCKER_PASSWORD` |
+| **`Forbidden`** | Le Pod tente d'accéder à un repo privé non autorisé | Vérifier les droits du compte Docker Hub  |
+| **`Not Found`** |Erreur de frappe dans le nom de l'image ou tag inexistant | Vérifier le champ `image:` dans le Deployment |
+| **`imagePullSecrets`** | ServiceAccount non patché au moment du spawn | Relancer le rollout du déploiement |
+
+---
+
 
 ### 5. Pruning (Nettoyage Automatique)
 Une fonction clé de notre configuration Argo CD est le Pruning.

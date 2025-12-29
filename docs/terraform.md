@@ -1,7 +1,7 @@
 ## Provisioning avec Terraform
 Cette section détaille la première étape du workflow : la création de la couche d'infrastructure et sa gestion centralisée via un backend distant.
 
-![Terraform Cloud](/img/terraform-cloud.png)
+![Terraform Cloud](/docs/sources/terraform-cloud.png)
 ---
 
 ### 1. L'Infrastructure as Code (IaC)

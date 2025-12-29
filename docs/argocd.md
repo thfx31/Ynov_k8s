@@ -1,7 +1,7 @@
 ## Orchestration GitOps avec Argo CD
 Cette section détaille la phase finale du déploiement : l'utilisation d'Argo CD pour piloter l'état du cluster selon le modèle App-of-Apps et une architecture en couches.
 
-![app-layer03](/img/argocd-app-layer-03.png)
+![app-layer03](/docs/sources/argocd-app-layer-03.png)
 
 ---
 
