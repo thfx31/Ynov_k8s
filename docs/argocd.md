@@ -1,6 +1,8 @@
 ## Orchestration GitOps avec Argo CD
 Cette section détaille la phase finale du déploiement : l'utilisation d'Argo CD pour piloter l'état du cluster selon le modèle App-of-Apps et une architecture en couches.
 
+![app-layer03](/docs/sources/argocd-app-layer-03.png)
+
 ---
 
 ### 1. Le GitOps et l'App-of-Apps
@@ -27,6 +29,7 @@ Plutôt que de déployer chaque application manuellement, nous utilisons une Roo
 | **Layer-02** | Data | Couche donnée : déploiement du serveur PostgreSQL (nécessaire pour Gitea)
 | **Layer-03** | Apps | Applications finales : Jenkins, Gitea et la page d'accueil Nginx-Front
 
+---
 
 ### 3. Cycle de vie et synchronisation
 **Synchronisation automatique**

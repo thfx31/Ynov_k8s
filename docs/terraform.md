@@ -1,6 +1,7 @@
 ## Provisioning avec Terraform
 Cette section détaille la première étape du workflow : la création de la couche d'infrastructure et sa gestion centralisée via un backend distant.
 
+![Terraform Cloud](/docs/sources/terraform-cloud.png)
 ---
 
 ### 1. L'Infrastructure as Code (IaC)
@@ -50,7 +51,7 @@ Terraform Cloud doit être autorisé à agir sur le compte DigitalOcean.
 Le pipeline GitHub Actions joue le rôle d'orchestrateur. Il commande à Terraform Cloud d'exécuter les modifications.
 
 - **Token d'API** : dans Terraform Cloud (User Settings > Tokens), générer un token d'accès.
-- **Secret GitHub** : sur votre dépôt GitHub, créer un secret nommé TF_API_TOKEN et collez-y ce jeton.
+- **Secret GitHub** : sur votre dépôt GitHub, créer un secret nommé `TF_API_TOKEN` et collez-y ce jeton.
 - **Exécution** : lors de l'étape `terraform apply`, le runner s'authentifie via ce token, envoie le code à Terraform Cloud, qui lui-même ordonne à DigitalOcean de créer les ressources.
 
 ---
@@ -64,7 +65,7 @@ Le pipeline GitHub Actions joue le rôle d'orchestrateur. Il commande à Terrafo
 **Gestion des Variables et Secrets**
 Pour des raisons de sécurité, aucune donnée sensible n'est écrite en dur dans les fichiers .tf.
 
-- **Input Variables** : Le token DigitalOcean (DO_TOKEN) et le nom de la clé SSH sont passés via des variables d'environnement.
+- **Input Variables** : Le token DigitalOcean (`DO_TOKEN`) et le nom de la clé SSH sont passés via des variables d'environnement.
 - **GitHub Integration** : Ces variables sont stockées dans les GitHub Secrets et injectées lors de l'exécution du workflow terraform apply.
 
 **Transition vers la configuration (Outputs)**
@@ -78,11 +79,11 @@ Pour des raisons de sécurité, aucune donnée sensible n'est écrite en dur dan
 Le cycle de vie se termine par la commande `terraform destroy`.
 
 - **Rôle** : Terraform Cloud identifie toutes les ressources rattachées au State et demande leur suppression à DigitalOcean.
-- **Point de vigilance** : Terraform ne peut détruire que ce qu'il a créé (les VMs). Les ressources générées dynamiquement par Kubernetes (LoadBalancers et Volumes via le CCM/CSI) doivent être supprimées via le workflow de nettoyage `kubectl` avant de lancer la destruction Terraform.
+- **Point de vigilance** : Terraform ne peut détruire que ce qu'il a créé (les VMs). Les ressources générées dynamiquement par Kubernetes (loadBalancer et volumes via le CCM/CSI) doivent être supprimées via le workflow de nettoyage `kubectl` avant de lancer la destruction Terraform.
 
 ---
 
-### 6. Utilisation (Commandes clés)
+### 6. Utilisation
 Ces commandes sont directement jouées par les workflow GitHub Actions, voici leur description :
 
 | Secret | Description

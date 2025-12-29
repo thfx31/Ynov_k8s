@@ -5,12 +5,12 @@ Ce projet met en place une **infrastructure DevOps** sur un cluster Kubernetes a
 Réalisation dans le cadre d'un TP **Orchestration Kubernetes** 
 (Mastère **Expert en cloud, sécurité & infrastructure 2024/2026**)
 
+![Argo CD Dashboard](/docs/sources/argocd-dashboard.png)
+
 ---
 
-> screenshot ARGO
-
-## Architecture Layered Gitops
-Le projet est organisé en couches pilotées par Argo CD. Chaque composant est déployé selon une hiérarchie précise via le modèle **App-of-Apps** :
+## Architecture Layered GitOps
+Le projet est organisé en couches pilotées par **Argo CD**. Chaque composant est déployé selon une hiérarchie précise via le modèle **App-of-Apps** :
 
 | Couche | Rôle | Composants
 |------------|------|--------|
@@ -18,6 +18,11 @@ Le projet est organisé en couches pilotées par Argo CD. Chaque composant est d
 | **Layer-01** | Environnement | Namespace
 | **Layer-02** | Data | PostgreSQL (database pour Gitea)
 | **Layer-03** | Apps | Gitea, Jenkins, Nginx-Front
+
+---
+## Architecture de la forge CI/CD
+![Argo CD Dashboard](/docs/sources/diagram-rt.png)
+*Représentation des objects du namespace applicatif RT*
 
 ---
 
@@ -39,14 +44,14 @@ Pour que les workflows fonctionnent, configurez les Secrets suivants dans votre 
 | **`POSTGRES_PASSWORD`** | Mot de passe de la DB Gitea |
 
 ### 2. Déploiement
-- Allez dans l'onglet Actions du dépôt
+- Allez dans l'onglet **Actions** du dépôt
 - Sélectionnez le workflow **"Kubernetes platform deployment"**
 - Cliquez sur Run workflow
 
 ### 3. Nettoyage des ressources
 Pour détruire l'infrastructure sans laisser de ressources facturées :
 - Lancer le workflow **"Kubernetes platform cleanup"**
-- Ce script supprimera les loadbalancers et volumes avant de détruire les VMs
+- Ce script supprimera le loadbalancer et volumes avant de détruire les VMs
 
 ### 4. Accès aux services
 | Appli | URL |
@@ -68,16 +73,16 @@ L'infrastructure est documentée par étapes, de la création des ressources Clo
 
 ### Sécurité
 - **[Gestion des secrets](docs/secrets.md)** : injection sécurisée des identifiants (Docker, Postgres, SSH) sans stockage dans Git
-- **[Sécurisation HTTPS avec Cert-Manager](docs/cert-manager.md)** : automatisation des certificats TLS avec **Let's Encrypt** pour tous les services de la forge
+- **[Sécurisation HTTPS avec Cert-Manager](docs/cert-manager.md)** : automatisation des certificats TLS avec **Let's Encrypt** pour tous les services de la forge logicielle
 
 ### GitOps
-- **[Workflow du déploiement](docs/deployment.md)** : Explication du pipeline GitHub Actions en 4 étapes
-- **[Orchestration avec Argo CD](docs/argocd.md)** :détails du modèle Layered GitOps (L0 à L3) et de la structure **App-of-Apps**
+- **[Workflow du déploiement](docs/deployment.md)** : explication du pipeline GitHub Actions en 4 étapes
+- **[Orchestration avec Argo CD](docs/argocd.md)** : détails du modèle Layered GitOps (L0 à L3) et de la structure **App-of-Apps**
 
 ### Opérations & cycle de vie
 - **[Quick Start et pilotage via GitHub CLI](docs/quickstart.md)** : procédure pour préparer le setup et utilisation de l'outil `gh` pour commander l'infrastructure depuis le terminal
 - **[Opérations de maintenance](docs/operations.md)** : guide pour le scaling, la mise à jour des applications et le troubleshooting
-- **[Stratégie de nettoyage](docs/cleanup.md)** : procédure de destruction ordonnée pour éviter les coûts orphelins (LoadBalancers/Volumes)
+- **[Cleanup des ressources](docs/cleanup.md)** : procédure de destruction ordonnée pour éviter les coûts orphelins (LoadBalancer/Volumes)
 
 
 ---
@@ -87,6 +92,5 @@ L'infrastructure est documentée par étapes, de la création des ressources Clo
 
 ---
 ## Licence
-
 Ce projet est distribué sous licence **MIT**.  
 Vous pouvez librement le réutiliser et le modifier avec attribution.
