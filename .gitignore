@@ -1,6 +1,3 @@
-# Ansible
-hosts.ini
-
 # Terraform
 .terraform/
 *.tfstate
@@ -9,7 +6,3 @@ hosts.ini
 *.tfvars.json
 override.tf
 override.tf.json
-
-# Environment variables
-.env-do
-.env-docker

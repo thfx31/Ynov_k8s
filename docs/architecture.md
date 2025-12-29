@@ -44,7 +44,15 @@ Pour éviter les conflits et organiser la sécurité, le cluster est découpé e
 
 ---
 
-### 4. Flux de données applicatif
+### 4. Accès au Registry Docker avec ServiceAccount Patch
+Pour simplifier le déploiement des applications, nous utilisons une méthode de "patch" sur le compte de service (`ServiceAccount`) par défaut du namespace `rt`.
+- **Fichier** : `k8s/01-initialisation/sa-patch.yaml`
+- **Rôle** : ce fichier injecte de manière permanente le secret `dockerhub-auth-secret` dans la configuration du `ServiceAccount` par défaut.
+- **Avantage** : Kubernetes utilise le compte de service par défaut pour lancer les Pods. En y associant le secret d'authentification, tous les Pods du namespace héritent automatiquement de la capacité à télécharger des images privées depuis Docker Hub. Cela évite de devoir déclarer manuellement la section `imagePullSecrets` dans chaque fichier `deployment.yaml` de l'application, réduisant ainsi les risques d'erreur et la duplication de code.
+
+---
+
+### 5. Flux de données applicatif
 - **Requête utilisateur** : l'utilisateur accède à `https://jenkins.yplank.fr`
 - **LoadBalancer DO** : reçoit la requête et l'envoie vers l'un des nœuds du cluster
 - **Ingress Nginx** : analyse le nom de domaine et redirige le flux vers le Service Jenkins
