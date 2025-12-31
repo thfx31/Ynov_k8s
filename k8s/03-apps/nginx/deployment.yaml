@@ -14,5 +14,5 @@ spec:
         app: web-forge
     spec:
       containers:
-        - image: thfx31/ynov:forge-v1
+        - image: thfx31/ynov:forge-v2
           name: nginx

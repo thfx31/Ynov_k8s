@@ -47,7 +47,7 @@ jobs:
           name: ansible-inventory
           path: ansible/
 
-      - name: Ansible Kubeadm Setup
+      - name: Ansible SSH Setup
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -95,14 +95,15 @@ jobs:
             # On s'assure que le namespace existe
             kubectl create namespace ${NS} --dry-run=client -o yaml | kubectl apply -f -
 
-            # Secret DigitalOcean (Pas besoin de label Argo car il est hors layer)
+            # Secret DigitalOcean
             kubectl create secret generic digitalocean -n kube-system --from-literal=access-token="$DO_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
         
-            # Création du Secret Docker Hub + étiquette pour Argo CD
+            # Création du Secret Docker Hub
             kubectl create secret docker-registry dockerhub-auth-secret \
               --docker-username="$D_USER" --docker-password="$D_PASS" \
               --namespace=rt --dry-run=client -o yaml | kubectl apply -f -
-    
+
+            # Argo CD tracking label : permet de lier le secret à une application Argo CD 
             kubectl label secret dockerhub-auth-secret -n rt app.kubernetes.io/instance=layer-01-init --overwrite
 
             # Création du Secret Postgres + étiquette pour Argo CD
@@ -112,6 +113,7 @@ jobs:
               --from-literal=postgres-db="$P_DB" \
               --namespace=rt --dry-run=client -o yaml | kubectl apply -f -
     
+            # Argo CD tracking label : permet de lier le secret à une application Argo CD 
             kubectl label secret postgres-secret -n rt app.kubernetes.io/instance=layer-01-init --overwrite
 
             # Déploiement des manifests d'infrastructure
@@ -137,7 +139,7 @@ jobs:
       - name: Launch Argo CD
         run: |
           export KUBECONFIG=./kubeconfig.yaml
-          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -       # Création du namespace ArgoCD (idenpotence)
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
           kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
           kubectl apply -f argocd-manager/root-app.yaml
@@ -147,11 +149,7 @@ jobs:
         run: |
           export KUBECONFIG=./kubeconfig.yaml
           
-          # 1. RÉCUPÉRATION DES INFOS DYNAMIQUES
-          # IP du LoadBalancer
-          LB_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "⏳ En attente...")
-          
-          # Liste des Nodes avec leurs IPs Externes
+          # Liste des nodes avec leurs IPs externes
           # On extrait le nom et l'IP externe (colonne 1 et 7 dans 'get nodes -o wide')
           NODE_LIST=$(kubectl get nodes -o wide --no-headers | awk '{print "- **" $1 "** : `" $7 "`"}' | xargs -d '\n')
 
@@ -159,7 +157,7 @@ jobs:
           ARGO_PWD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d 2>/dev/null || echo "🔐 Déjà configuré")
 
           # 2. CONSTRUCTION DU RÉSUMÉ
-          echo "# 🚀 Votre Infrastructure est prête !" >> $GITHUB_STEP_SUMMARY
+          echo "# Cluster K8S déployé !" >> $GITHUB_STEP_SUMMARY
           
           echo "### 🖥️ Nodes DigitalOcean (Infrastructure)" >> $GITHUB_STEP_SUMMARY
           echo "$NODE_LIST" >> $GITHUB_STEP_SUMMARY
@@ -173,8 +171,8 @@ jobs:
           echo "| **Gitea** | https://gitea.yplank.fr | \`user\` |" >> $GITHUB_STEP_SUMMARY
 
           echo -e "\n### 🔑 Mots de passe et Secrets" >> $GITHUB_STEP_SUMMARY
-          echo "- **ArgoCD Initial PWD** : \`$ARGO_PWD\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Jenkins PWD** : Lancez la commande suivante (attendre 2 min après boot) :" >> $GITHUB_STEP_SUMMARY
+          echo "- **ArgoCD Initial password** : \`$ARGO_PWD\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Jenkins password** : Lancez la commande suivante (attendre 2 min après boot) :" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo 'kubectl exec -n rt $(kubectl get pod -n rt -l app=jenkins -o name | head -n 1) -- cat /var/jenkins_home/secrets/initialAdminPassword' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
