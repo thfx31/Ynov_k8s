@@ -47,7 +47,7 @@ jobs:
           name: ansible-inventory
           path: ansible/
 
-      - name: Ansible Kubeadm Setup
+      - name: Ansible SSH Setup
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}

@@ -11,17 +11,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. Récupération du Kubeconfig depuis le dernier déploiement 
+      # Récupération du Kubeconfig depuis le dernier déploiement 
       - name: Download Kubeconfig from Latest Deployment
         run: |
           echo "Recherche du dernier artefact 'cluster-kubeconfig'..."
-          # Télécharge l'artefact le plus récent portant ce nom, peu importe le run
-          gh run download --name cluster-kubeconfig --dir ./ || echo "⚠️ Aucun artefact trouvé."
+          # Télécharge l'artefact le plus récent portant ce nom
+          gh run download --name cluster-kubeconfig --dir ./ || echo "Aucun artefact trouvé."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
-      # 2. Configuration de Terraform avec le Token Cloud
+      # Configuration de Terraform avec le Token Cloud
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -29,7 +29,7 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
 
-      # 3. Suppression chirurgicale des ressources Cloud (LoadBalancer & Volumes)
+      # Suppression des ressources Cloud (LoadBalancer & Volumes)
       - name: Delete Kubernetes Resources
         run: |
           if [ -f "kubeconfig.yaml" ]; then
@@ -41,17 +41,17 @@ jobs:
             echo "Suppression des PVC (Volumes DigitalOcean)..."
             kubectl delete pvc --all -n rt --wait=true --timeout=3m || true
 
-            echo "Suppression des Namespaces..."
+            echo "Suppression des namespaces..."
             kubectl delete namespace rt ingress-nginx argocd --wait=true --timeout=5m || true
 
             echo "Pause de sécurité (90s) pour la libération des API DigitalOcean..."
-            # Crucial : Terraform doit attendre que DO marque les ressources comme 'deleted'
+            # Terraform doit attendre que DO marque les ressources comme 'deleted'
             sleep 90
           else
-            echo "Kubeconfig non trouvé, tentative de destruction Terraform directe."
+            echo "Kubeconfig non trouvé, tentative de destruction Terraform directe. Pensez-à supprimer les ressources manuellement si nécessaire."
           fi
 
-      # 4. Destruction de l'infrastructure (VMs et LoadBalancer)
+      # Destruction de l'infrastructure (VMs)
       - name: Terraform Destroy
         env:
           TF_VAR_do_token: ${{ secrets.DO_TOKEN }}
