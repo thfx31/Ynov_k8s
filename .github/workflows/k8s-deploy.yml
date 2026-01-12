@@ -161,7 +161,6 @@ jobs:
           
           echo "### 🖥️ Nodes DigitalOcean (Infrastructure)" >> $GITHUB_STEP_SUMMARY
           echo "$NODE_LIST" >> $GITHUB_STEP_SUMMARY
-          echo "- **IP LoadBalancer (Ingress)** : \`$LB_IP\`" >> $GITHUB_STEP_SUMMARY
 
           echo -e "\n### 🌐 Accès Services HTTPS" >> $GITHUB_STEP_SUMMARY
           echo "| Service | URL | Identifiant |" >> $GITHUB_STEP_SUMMARY
